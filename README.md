@@ -6,4 +6,4 @@ This application allows you to upload DAT or OPT files, convert them into CSV fo
 
 1. Clone the repository:
 2. Install dependencies:
-3. Run the app:
+3. Run the app: streamlit run app/main.py --server.maxUploadSize=5120

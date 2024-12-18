@@ -3,16 +3,15 @@ import os
 from dateutil.parser import parse
 import csv
 import sys
-import io
-import chardet
 import streamlit as st
+import re
 
 ### ------------------------ ###
 #  Data Preparation Functions
 ### ------------------------ ###
 
 @st.cache_data
-def convert_dat_to_csv(dat_file):
+def convert_dat_to_df(dat_file):
     # Dealing with overflow errors
     maxInt = sys.maxsize
     while True:
@@ -27,7 +26,7 @@ def convert_dat_to_csv(dat_file):
     return df
 
 @st.cache_data
-def convert_opt_to_csv(opt_file):
+def convert_opt_to_df(opt_file):
     # Read .csv file into a DataFrame
     df = pd.read_csv(opt_file, encoding='utf-8', engine='python',names=['Filename', 'Volume', 'Path', 'First Page', 'Col1', 'Col2', 'Page Count'])
     df.dropna(axis=1, how='all')
@@ -53,7 +52,7 @@ def compute_value_info(df):
             max_lengths[col] = values.max()
             datatypes[col] = 'datetime'
                 # Check for string columns
-        elif datatype == object and pd.api.types.is_string_dtype(values):
+        elif datatype is object and pd.api.types.is_string_dtype(values):
             # Replace NaN with empty string
             values_filled = values.fillna('')
             min_lengths[col] = values_filled.str.len().min()
@@ -90,10 +89,123 @@ def compute_value_info(df):
     profile_df = pd.DataFrame({"Data Type":datatypes, "Min": min_lengths, "Max": max_lengths, "% Values Filled": filled_percentages})
     return profile_df
 
-def save_csv(df, original_name):
-    """Save the DataFrame to the outputs directory."""
-    output_path = f"app/outputs/{os.path.splitext(original_name)[0]}.csv"
-    df.to_csv(output_path, index=False, encoding='utf-8')
+@st.cache_data
+def compute_opt_info(df):
+    df = df.dropna(axis=1, how='all')
+
+    results = {}
+    # 1. List unique prefixes in 'Filename'
+    def extract_prefix(filename):
+        match = re.match(r'([a-zA-Z_\-]+)(\d+)', filename)
+        return match.group(1).strip() if match else None
+
+    prefixes = df['Filename'].apply(extract_prefix).dropna().unique()
+    results['Unique Prefixes'] = prefixes.tolist()
+
+    # 2. List filename lengths per prefix
+    filename_lengths = df['Filename'].apply(len)
+    lengths_per_prefix = (
+        df.assign(Length=filename_lengths)
+        .groupby(df['Filename'].apply(extract_prefix))['Length']
+        .unique()
+        .apply(lambda x: list(map(int, x)))  # Convert to int
+    )
+    results['Filename Lengths per Prefix'] = lengths_per_prefix.to_dict()
+
+    # 3. List unique values in 'Volume'
+    results['Unique Volumes'] = df['Volume'].dropna().unique().tolist()
+
+    # 4. Count values in 'First Page'
+    first_page_count = (df['First Page'] == "Y").sum()
+    results['Total Docs'] = int(first_page_count)
+
+    # 5. Count values in 'Page Count' equal to 1
+    page_count_equal_1 = (df['Page Count'] == 1).sum()
+    results['Page Count Equal to 1'] = int(page_count_equal_1)
+
+    # 6. Count values in 'Page Count' greater than 1
+    page_count_greater_1 = (df['Page Count'] > 1).sum()
+    results['Page Count Greater than 1'] = int(page_count_greater_1)
+
+    opt_profile = {'Profile':results, 'Dataframe':df}
+
+    return opt_profile
+
+def manipulate_dataframes(df1, df2, load_file_name):
+    with st.form("data_manipulation_form"):
+        st.header("Data Manipulation Options")
+
+        # Remove empty columns
+        remove_empty_cols = st.checkbox("Remove empty columns")
+
+        # Find and Replace
+        st.subheader("Find and Replace")
+        columns_to_search = st.multiselect("Select columns to search in", df1.columns)
+        find_text = st.text_input("Text to find")
+        replace_text = st.text_input("Replace with")
+
+        # Duplicate Column
+        st.subheader("Duplicate Column")
+        col_to_duplicate = st.selectbox("Select column to duplicate", df1.columns)
+        new_col_name = st.text_input("New column name")
+
+        # Export CSV Settings
+        st.subheader("Export Settings")
+        export_csv = st.checkbox("Export DataFrame as CSV")
+        partition_size = st.number_input(
+            "Partition size (rows per CSV file). If no partition needed, enter value that is larger than # of rows in CSV", min_value=1, step=1, value=100000
+        )
+        export_folder = "app/outputs"
+
+        # Submit Button
+        submitted = st.form_submit_button("Apply Changes")
+
+        if submitted:
+            # Perform Data Manipulations
+            if remove_empty_cols:
+                df1.dropna(axis=1, how="all", inplace=True)
+                st.success("Empty columns removed.")
+
+            # Handle Find and Replace
+            if find_text and columns_to_search:
+                try:
+                    # Convert input to raw string format
+                    raw_find_text = re.escape(find_text)
+                    print("Find: " + raw_find_text)
+                    raw_replace_text = fr"{replace_text}"
+                    print("Replace: " + raw_replace_text)
+
+                    for col in columns_to_search:
+                        df1[col] = df1[col].replace(raw_find_text, raw_replace_text, regex=True)
+                    st.success(f"Replaced '{find_text}' with '{replace_text}' in selected columns.")
+                except Exception as e:
+                    st.error(f"Find and replace failed: {e}")
+
+            if col_to_duplicate and new_col_name:
+                if new_col_name not in df1.columns:
+                    df1[new_col_name] = df1[col_to_duplicate]
+                    st.success(f"Duplicated column '{col_to_duplicate}' as '{new_col_name}'.")
+                else:
+                    st.error(f"Column '{new_col_name}' already exists.")
+
+            # Export CSV Logic
+            if export_csv:
+                if not os.path.exists(export_folder):
+                    os.makedirs(export_folder)
+
+                total_rows = len(df1)
+                num_files = (total_rows // partition_size) + (total_rows % partition_size > 0)
+                load_file_name = load_file_name.replace(" ", "_")
+
+                for i in range(num_files):
+                    start_row = i * partition_size
+                    end_row = min(start_row + partition_size, total_rows)
+                    partition_df = df1.iloc[start_row:end_row]
+
+                    output_file = os.path.join(export_folder, f"{load_file_name}_{i+1}.csv")
+                    partition_df.to_csv(output_file, index=False, encoding="utf-8")
+
+                st.success(f"Exported {num_files} CSV file(s) to '{export_folder}'.")
 
 def sample_values(df):
     num_rows = len(df)
@@ -137,11 +249,7 @@ def clean_csv(df, filename):
     print(csv_file_path)
     df.to_csv(csv_file_path, index=False, encoding='utf-8')
     return
-
-def eval_opt(df):
-    df = remove_empty_cols(df)
     
-
 def random_sample_df(df, sample_size=25):
     """
     Perform a random sampling of a DataFrame.

@@ -1,14 +1,15 @@
-import argparse
 import os
 import pandas as pd
 import streamlit as st
 
-from utils import save_csv, convert_dat_to_csv, compute_value_info, random_sample_df, convert_opt_to_csv
+from utils import convert_dat_to_df, compute_value_info, random_sample_df, convert_opt_to_df, manipulate_dataframes, compute_opt_info
 
 
-###
+### ------------------------ ###
+# Streamlit Settings
+### ------------------------ ###
 
-###
+st.set_page_config(layout="wide")
 
 if 'clicked' not in st.session_state:
     st.session_state.clicked = False
@@ -25,45 +26,53 @@ def prep_df(df):
 # Streamlit App
 ### ------------------------ ###
 
+# Title
 st.title("Load File Profiler")
-
 uploaded_file = st.file_uploader("Upload a DAT or CSV file", type=["dat", "csv"])
-
-if uploaded_file:
-    opt_file = st.file_uploader("Upload an optional OPT file", type=["opt"])
+if uploaded_file: # Load File
+    
+    opt_file = st.file_uploader("Upload an optional OPT file", type=["opt"]) # OPT
     file_extension = os.path.splitext(uploaded_file.name)[1].lower()
     if file_extension == ".dat":
-        load_file_df = convert_dat_to_csv(uploaded_file)
+        load_file_df = convert_dat_to_df(uploaded_file)
     elif file_extension == ".csv":
         load_file_df = pd.read_csv(uploaded_file, dtype=str)
     else:
         st.error("Unsupported file type.")
         st.stop()
-
+    
+    # Data Profiling
     st.button('Run data profile.', on_click=click_button)
     if st.session_state.clicked:
         st.success("File loaded successfully!")
-        st.subheader("Random Sample")
+        st.subheader("Size of Load File (Rows,Columns):")
+        st.text(load_file_df.shape)
         if opt_file:
-            opt_df = convert_opt_to_csv
+            opt_df = convert_opt_to_df(opt_file)
+            opt_profile = compute_opt_info(opt_df)
+            st.subheader("OPT Data Profile")
+            st.json(opt_profile['Profile'])
+            st.dataframe(opt_profile['Dataframe'])
         try:
             sampled_df = random_sample_df(load_file_df)
+            st.subheader("Random Sample")
             st.dataframe(sampled_df)
         except ValueError as e:
             st.error(f"Error: {e}")
 
         # Profile data
-        profile = compute_value_info(load_file_df)
-        st.subheader("Data Profile")
-        st.dataframe(profile)
+        lf_profile = compute_value_info(load_file_df)
+        st.subheader("Load File Data Profile")
+        st.dataframe(lf_profile)
 
-        # Save CSV output
-        csv = prep_df(load_file_df)
-        st.download_button(
-            label="Download data as CSV",
-            data=csv,
-            file_name="large_df.csv",
-            mime="text/csv",
-        )
-
-###
+        # Data Manipulations / Output
+        if opt_file:
+            try:
+                manipulate_dataframes(load_file_df, opt_df, os.path.splitext(uploaded_file.name)[0].lower())
+            except ValueError as e:
+                st.error(f"Error: {e}")
+        else:
+            try:
+                manipulate_dataframes(load_file_df, None, os.path.splitext(uploaded_file.name)[0].lower())
+            except ValueError as e:
+                st.error(f"Error: {e}")
