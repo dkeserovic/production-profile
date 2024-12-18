@@ -36,15 +36,21 @@ Follow these steps to clone the app and get it running:
 - Open a terminal (Command Prompt, PowerShell, or terminal on macOS/Linux).
 - Navigate to an empty folder on your local device
 - Run the following command to clone the repository:
-<code>git clone https://github.com/dkeserovic/production-profile.git</code>
+    ```
+    git clone https://github.com/dkeserovic/production-profile.git
+    ```
 
 ### 4. Navigate to the Project Directory
 - Navigate to the cloned project folder:
-<code>cd name/of/folder</code>
+    ```
+    cd name/of/folder
+    ```
 
 ### 5. Create and activate Virtual Environment
 - Create a virtual environment to manage dependencies:
-<code>python -m venv venv</code>
+    ```
+    python -m venv venv
+    ```
 - Activate the virtual environment:
 - On **Windows**:
   ```
@@ -53,10 +59,14 @@ Follow these steps to clone the app and get it running:
 
 ### 6. Install Dependencies
 - Install the required Python packages:
-<code>pip install -r requirements.txt</code>
+    ```
+    pip install -r requirements.txt
+    ```
 
 ### 7. Run the Application
-<code>streamlit run app/main.py --server.maxUploadSize=5120</code>
+    ```
+    streamlit run app/main.py --server.maxUploadSize=5120
+    ```
 
 
 ## How to Use the Tool
