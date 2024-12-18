@@ -64,6 +64,7 @@ Follow these steps to clone the app and get it running:
     ```
 
 ### 7. Run the Application
+- Execute the following command. you can change the max upload size to any value that represents total megabytes
     ```
     streamlit run app/main.py --server.maxUploadSize=5120
     ```
