@@ -5,6 +5,9 @@ import csv
 import sys
 import streamlit as st
 import re
+import chardet
+import tempfile
+
 
 ### ------------------------ ###
 #  Data Preparation Functions
@@ -22,7 +25,22 @@ def convert_dat_to_df(dat_file):
             maxInt = int(maxInt / 10)
 
     # Read .dat file into a DataFrame
-    df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding='utf-8', engine='python')
+    try:
+        # Create Temp Directory for file to get encoding
+        temp_dir = tempfile.mkdtemp()
+        path = os.path.join(temp_dir, dat_file.name)
+        with open(path, "wb") as f:
+            f.write(dat_file.getvalue())
+        with open(path, 'rb') as f:
+            encoding = chardet.detect(f.read())
+            print("Encoding" + str(encoding))
+        
+        # If low confidence, send error
+        if encoding['confidence'] < 0.9:
+            st.warning("Encoding Confidence Under 90%. Manual dat conversion may be necessary")
+        df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding=encoding['encoding'], engine='python')
+    except Exception as E1:
+        print("Could not read encoding: " +str(E1))
     return df
 
 @st.cache_data
