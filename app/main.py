@@ -55,7 +55,7 @@ if uploaded_file: # Load File
             st.dataframe(opt_profile['Dataframe'])
         try:
             sampled_df = random_sample_df(load_file_df)
-            st.subheader("Random Sample")
+            st.subheader("Dataframe Preview")
             st.dataframe(sampled_df)
         except ValueError as e:
             st.error(f"Error: {e}")

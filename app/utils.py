@@ -210,7 +210,8 @@ def manipulate_dataframes(df1, df2, load_file_name):
 def sample_values(df):
     num_rows = len(df)
     num_samples = min(num_rows, 50)  # Sample 50 rows or less if the DataFrame is smaller
-    sample_df = df.sample(num_samples)
+    sample_df = df.head(num_samples)
+    print(sample_df)
     return sample_df
 
 def is_date_col(vals, fuzzy=False):
@@ -250,7 +251,7 @@ def clean_csv(df, filename):
     df.to_csv(csv_file_path, index=False, encoding='utf-8')
     return
     
-def random_sample_df(df, sample_size=25):
+def random_sample_df(df, sample_size=50):
     """
     Perform a random sampling of a DataFrame.
 
@@ -270,5 +271,5 @@ def random_sample_df(df, sample_size=25):
     if sample_size > len(df):
         sample_size = len(df)  # Adjust to DataFrame size if too large
     
-    sampled_df = df.sample(n=sample_size, random_state=42)
+    sampled_df = df.head(n=sample_size)
     return sampled_df

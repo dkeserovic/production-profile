@@ -133,6 +133,7 @@ venv.bak/
 # Outputs
 .outputs
 /outputs
+.csv
 
 # Spyder project settings
 .spyderproject
