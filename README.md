@@ -3,12 +3,12 @@
 This is a Streamlit-based application designed to analyze and manipulate production data load files (`DAT`, `CSV`, and optional `OPT` files). The tool includes features for profiling, sampling, data manipulation, and exporting results.
 
 ## Features
-- Upload and process load files (`DAT`, `CSV`, and `OPT`).
+- Upload and process load files (`DAT`, `CSV`, and `OPT`) supporting multiple encoding types.
 - Profile data, including column statistics and unique values.
-- Random sampling of data (25 rows and all columns).
+- Sampling of load file.
 - Data manipulation features:
   - Remove empty columns.
-  - Find and replace text in specific columns, with support for raw strings.
+  - Find and replace text in specific columns.
   - Duplicate columns with a custom name.
 - Export modified data as UTF-8 encoded CSV files with optional partitioning.
 
@@ -32,7 +32,7 @@ Follow these steps to clone the app and get it running:
 ### 2. Install Git
 - Download and install Git from the [official Git website](https://git-scm.com/).
 
-### 3. Clone the Repository
+### 3. Clone the Repository using a terminal 
 - Open a terminal (Command Prompt, PowerShell, or terminal on macOS/Linux).
 - Navigate to an empty folder on your local device
 - Run the following command to clone the repository:
@@ -64,7 +64,7 @@ Follow these steps to clone the app and get it running:
     ```
 
 ### 7. Run the Application
-- Execute the following command. you can change the max upload size to any value that represents total megabytes
+- Execute the following command. You can change the max upload size to any value that represents total megabytes (i.e. 5120 = 5GB)
     ```
     streamlit run app/main.py --server.maxUploadSize=5120
     ```

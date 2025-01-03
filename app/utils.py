@@ -23,24 +23,47 @@ def convert_dat_to_df(dat_file):
             break
         except OverflowError:
             maxInt = int(maxInt / 10)
-
-    # Read .dat file into a DataFrame
+    
+    df = None
+    # Read .dat file into a DataFrame using utf-8
     try:
-        # Create Temp Directory for file to get encoding
-        temp_dir = tempfile.mkdtemp()
-        path = os.path.join(temp_dir, dat_file.name)
-        with open(path, "wb") as f:
-            f.write(dat_file.getvalue())
-        with open(path, 'rb') as f:
-            encoding = chardet.detect(f.read())
-            print("Encoding" + str(encoding))
-        
-        # If low confidence, send error
-        if encoding['confidence'] < 0.9:
-            st.warning("Encoding Confidence Under 90%. Manual dat conversion may be necessary")
-        df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding=encoding['encoding'], engine='python')
-    except Exception as E1:
-        print("Could not read encoding: " +str(E1))
+        df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding='utf-8', engine='python')
+        print("Read as UTF-8")
+    except Exception as utf8_error:
+        st.warning("Could not read as utf-8")
+        print(f"Failed to read file with UTF-8 encoding: {utf8_error}")
+    
+    # Read .dat file into a DataFrame using utf-16
+    if df is None:
+        try:
+            df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding='utf-16', engine='python')
+            print("Read as UTF-16")
+        except Exception as utf16_error:
+            st.warning("Could not read as utf-16. Attempting to read encoding.")
+            print(f"Failed to read file with UTF-16 encoding: {utf16_error}")
+
+    # Write dat file to temp directory and attempt to read encoding
+    if df is None:
+        try:
+            # Create Temp Directory for file to get encoding
+            temp_dir = tempfile.mkdtemp()
+            path = os.path.join(temp_dir, dat_file.name)
+            with open(path, "wb") as f:
+                f.write(dat_file.getvalue())
+            with open(path, 'rb') as f:
+                encoding = chardet.detect(f.read())
+                print("Encoding" + str(encoding))
+            
+            # If low confidence, send warning
+            if encoding['confidence'] < 0.9:
+                st.warning("Encoding Confidence Under 90%. Manual dat conversion may be necessary")
+            df = pd.read_csv(dat_file, sep="", quotechar="þ", dtype=str, doublequote=False, encoding=encoding['encoding'], engine='python')
+        except Exception as E1:
+            print("Could not read encoding: " +str(E1))
+    
+    # Could not read encoding correctly
+    if df is None:
+        st.warning("Load file could not be read as a dataframe. Please convert to csv and re-upload converted file.")
     return df
 
 @st.cache_data
@@ -52,6 +75,7 @@ def convert_opt_to_df(opt_file):
 
 @st.cache_data
 def compute_value_info(df):
+    # Initialize dictionaries
     min_lengths = {}
     max_lengths = {}
     datatypes = {}
@@ -112,7 +136,7 @@ def compute_opt_info(df):
     df = df.dropna(axis=1, how='all')
 
     results = {}
-    # 1. List unique prefixes in 'Filename'
+    # List unique prefixes in 'Filename'
     def extract_prefix(filename):
         match = re.match(r'([a-zA-Z_\-]+)(\d+)', filename)
         return match.group(1).strip() if match else None
@@ -120,7 +144,7 @@ def compute_opt_info(df):
     prefixes = df['Filename'].apply(extract_prefix).dropna().unique()
     results['Unique Prefixes'] = prefixes.tolist()
 
-    # 2. List filename lengths per prefix
+    # List filename lengths per prefix
     filename_lengths = df['Filename'].apply(len)
     lengths_per_prefix = (
         df.assign(Length=filename_lengths)
@@ -130,18 +154,18 @@ def compute_opt_info(df):
     )
     results['Filename Lengths per Prefix'] = lengths_per_prefix.to_dict()
 
-    # 3. List unique values in 'Volume'
+    # List unique values in 'Volume'
     results['Unique Volumes'] = df['Volume'].dropna().unique().tolist()
 
-    # 4. Count values in 'First Page'
+    # Count values in 'First Page'
     first_page_count = (df['First Page'] == "Y").sum()
     results['Total Docs'] = int(first_page_count)
 
-    # 5. Count values in 'Page Count' equal to 1
+    # Count values in 'Page Count' equal to 1
     page_count_equal_1 = (df['Page Count'] == 1).sum()
     results['Page Count Equal to 1'] = int(page_count_equal_1)
 
-    # 6. Count values in 'Page Count' greater than 1
+    # Count values in 'Page Count' greater than 1
     page_count_greater_1 = (df['Page Count'] > 1).sum()
     results['Page Count Greater than 1'] = int(page_count_greater_1)
 
