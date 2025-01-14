@@ -43,7 +43,7 @@ Follow these steps to clone the app and get it running:
 ### 4. Navigate to the Project Directory
 - Navigate to the cloned project folder:
     ```
-    cd name/of/folder
+    cd production-profile
     ```
 
 ### 5. Create and activate Virtual Environment
