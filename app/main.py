@@ -45,17 +45,19 @@ if uploaded_file: # Load File
     st.button('Run data profile.', on_click=click_button)
     if st.session_state.clicked:
         st.success("File loaded successfully!")
-        st.subheader("Size of Load File (Rows,Columns):")
-        st.text(load_file_df.shape)
         if opt_file:
             opt_df = convert_opt_to_df(opt_file)
             opt_profile = compute_opt_info(opt_df)
-            st.subheader("OPT File")
+            st.subheader("OPT Information")
             st.json(opt_profile['Profile'])
             st.dataframe(opt_profile['Dataframe'])
             if len(load_file_df) != len(opt_profile['Docs']):
                 st.warning("OPT reads " + str(len(opt_profile['Docs'])) + " docs and Load File reads " + str(len(load_file_df)) + " docs.")
+            st.info("Check: Do Total Docs in JSON matches the size of the load file (see below)?", icon=":material/verified:")
+            st.info("Check: Do Total Unique Paths match the image count in the images folder (see file room)?", icon=":material/verified:")
         try:
+            st.divider()
+            st.subheader("Size of Load File (Rows,Columns): " + str(load_file_df.shape))
             sampled_df = set_sample_df(load_file_df)
             st.subheader("Dataframe Preview")
             st.dataframe(sampled_df)
