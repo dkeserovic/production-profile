@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import streamlit as st
 
-from utils import convert_dat_to_df, compute_value_info, random_sample_df, convert_opt_to_df, manipulate_dataframes, compute_opt_info
+from utils import convert_dat_to_df, compute_value_info, set_sample_df, convert_opt_to_df, manipulate_dataframes, compute_opt_info
 
 
 ### ------------------------ ###
@@ -50,11 +50,13 @@ if uploaded_file: # Load File
         if opt_file:
             opt_df = convert_opt_to_df(opt_file)
             opt_profile = compute_opt_info(opt_df)
-            st.subheader("OPT Data Profile")
+            st.subheader("OPT File")
             st.json(opt_profile['Profile'])
             st.dataframe(opt_profile['Dataframe'])
+            if len(load_file_df) != len(opt_profile['Docs']):
+                st.warning("OPT reads " + str(len(opt_profile['Docs'])) + " docs and Load File reads " + str(len(load_file_df)) + " docs.")
         try:
-            sampled_df = random_sample_df(load_file_df)
+            sampled_df = set_sample_df(load_file_df)
             st.subheader("Dataframe Preview")
             st.dataframe(sampled_df)
         except ValueError as e:

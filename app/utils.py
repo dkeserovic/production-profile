@@ -169,7 +169,13 @@ def compute_opt_info(df):
     page_count_greater_1 = (df['Page Count'] > 1).sum()
     results['Page Count Greater than 1'] = int(page_count_greater_1)
 
-    opt_profile = {'Profile':results, 'Dataframe':df}
+    # Count rows
+    results['Total Unique Paths (Pages)'] = len(df['Path'].unique())
+
+    # Create dataframe of just first pagers
+    df_docs = df[df['First Page'] == 'Y']
+
+    opt_profile = {'Profile':results, 'Dataframe':df, "Docs":df_docs}
 
     return opt_profile
 
@@ -293,13 +299,12 @@ def clean_csv(df, filename):
     df.to_csv(csv_file_path, index=False, encoding='utf-8')
     return
     
-def random_sample_df(df, sample_size=50):
-    """
-    Perform a random sampling of a DataFrame.
+def set_sample_df(df, sample_size=5000):
+    """Pulls first 5000 rows of a DataFrame.
 
     Parameters:
     df (pd.DataFrame): The DataFrame to sample from.
-    sample_size (int): Number of rows to sample (default is 25).
+    sample_size (int): Number of rows to sample (default is 5000).
 
     Returns:
     pd.DataFrame: A new DataFrame containing the sampled rows.
