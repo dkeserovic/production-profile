@@ -53,8 +53,8 @@ if uploaded_file: # Load File
             st.dataframe(opt_profile['Dataframe'])
             if len(load_file_df) != len(opt_profile['Docs']):
                 st.warning("OPT reads " + str(len(opt_profile['Docs'])) + " docs and Load File reads " + str(len(load_file_df)) + " docs.")
-            st.info("Check: Do Total Docs in JSON matches the size of the load file (see below)?", icon=":material/verified:")
-            st.info("Check: Do Total Unique Paths match the image count in the images folder (see file room)?", icon=":material/verified:")
+            st.info("Check: Do Total Docs in JSON matches the size of the load file (see below)? If not, there may be extra docs that need to be imported with an image file import", icon=":material/verified:")
+            st.info("Check: Do Total Unique Paths match the image count in the images folder (see file room)? If not, there may be missing images in the file room.", icon=":material/verified:")
         try:
             st.divider()
             st.subheader("Size of Load File (Rows,Columns): " + str(load_file_df.shape))

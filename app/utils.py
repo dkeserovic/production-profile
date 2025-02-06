@@ -147,12 +147,13 @@ def compute_opt_info(df):
     # List filename lengths per prefix
     filename_lengths = df['Filename'].apply(len)
     lengths_per_prefix = (
-        df.assign(Length=filename_lengths)
-        .groupby(df['Filename'].apply(extract_prefix))['Length']
-        .unique()
-        .apply(lambda x: list(map(int, x)))  # Convert to int
+        df.assign(Length=filename_lengths)  # Add "Length" column
+        .groupby([df['Filename'].apply(extract_prefix), 'Length'])
+        .size()  # Count occurrences per (prefix, length)
+        .unstack(fill_value=0)  # Convert to wide format, filling missing values with 0
+        .T.to_dict()  # Transpose and convert to dictionary format
     )
-    results['Filename Lengths per Prefix'] = lengths_per_prefix.to_dict()
+    results['Filename Lengths per Prefix'] = lengths_per_prefix
 
     # List unique values in 'Volume'
     results['Unique Volumes'] = df['Volume'].dropna().unique().tolist()
